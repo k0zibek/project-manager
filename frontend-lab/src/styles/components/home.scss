@@ -1,0 +1,30 @@
+.home-container {
+  padding: 20px 0;
+}
+
+.home-intro {
+  display: flex;
+  gap: 15px;
+  margin-bottom: 30px;
+
+  .search-input-container {
+    width: 570px;
+  }
+}
+
+.projects-container {
+  display: flex;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.project-card {
+  flex-basis: 32%;
+}
+
+.pagination-controls {
+  align-items: center;
+  display: flex;
+  gap: 10px;
+  margin: 30px 0 15px;
+}

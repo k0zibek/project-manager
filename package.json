@@ -1,0 +1,7 @@
+{
+  "scripts": {
+    "client": "cd frontend-lab && npm start",
+    "server": "cd backend && npm start",
+    "dev": "concurrently \"npm run server\" \"npm run client\""
+  }
+}

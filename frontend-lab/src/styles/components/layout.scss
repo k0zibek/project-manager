@@ -1,0 +1,22 @@
+.wrapper {
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.main-container {
+  background: $c-main-bg;
+  border-radius: 4px;
+  padding: 35px;
+}
+
+.error-container {
+  display: flex;
+  justify-content: center;
+  color: $c-error-text;
+}
+
+.success-container {
+  display: flex;
+  justify-content: center;
+  color: $c-success-text;
+}

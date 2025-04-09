@@ -1,0 +1,46 @@
+.project-container {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 20px 0;
+}
+
+.project-header, .project-task-states {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.project-header {
+  padding-bottom: 15px;
+}
+
+.project-task-states {
+  margin-top: 25px;
+
+  .task-column {
+    background-color: $c-task-column-bg;
+    border-radius: 4px;
+    border: 1px solid #11141826;
+    max-width: 250px;
+    min-height: 235px;
+    min-width: 200px;
+  }
+
+  .task-state-title {
+    margin: 0;
+    text-align: center;
+  }
+}
+
+.task-card-container {
+  display: flex;
+
+  .task-card-btn {
+    height: 100%;
+  }
+}
+
+.task-card-content {
+  cursor: grab;
+  flex: 1;
+}

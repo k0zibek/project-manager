@@ -1,0 +1,63 @@
+.profile-container {
+  max-width: 80%;
+  margin: 0 auto;
+  padding: 30px;
+}
+
+.profile-header {
+  display: flex;
+  align-items: center;
+  padding: 15px;
+  border-radius: 4px;
+  margin: 16px 0;
+}
+
+.user-avatar {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  margin-right: 16px;
+}
+
+.user-name-container{
+  flex: 1;
+
+  .user-name {
+    margin: 0;
+  }
+}
+
+.profile-info {
+  padding: 8px 15px;
+
+  .user-email {
+    font-size: 16px;
+    margin: 16px 0;
+  }
+}
+
+.password-change {
+  padding: 8px 15px;
+  margin: 16px 0;
+
+  .form-password-change {
+    display: flex;
+    align-items: baseline;
+    gap: 8px;
+  }
+}
+
+.tasks-list-container {
+  padding: 8px 15px;
+  margin: 16px 0;
+
+  .task-list {
+    list-style: none;
+    padding: 0;
+  }
+
+  .task-item {
+    padding: 10px 0;
+    border-bottom: 1px solid $c-task-list-border;
+  }
+}

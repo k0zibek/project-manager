@@ -1,0 +1,16 @@
+// settings
+@import "settings/colors";
+@import "settings/variables";
+
+// generic
+@import "generic/base";
+
+// components
+@import "components/layout";
+@import "components/header";
+@import "components/home";
+@import "components/login";
+@import "components/profile";
+@import "components/project";
+@import "components/notfound";
+@import "components/taskdetail";
