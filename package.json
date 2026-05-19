@@ -1,7 +1,26 @@
 {
+  "name": "project-manager",
+  "private": true,
+  "workspaces": [
+    "apps/*",
+    "packages/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
-    "client": "cd frontend-lab && npm start",
-    "server": "cd backend && npm start",
-    "dev": "concurrently \"npm run server\" \"npm run client\""
+    "postinstall": "node scripts/ensure-drizzle-orm-link.mjs",
+    "dev": "concurrently -n api,web,legacy -c blue,green,yellow \"npm run dev -w @project-manager/api\" \"npm run dev -w @project-manager/web\" \"npm run dev:legacy\"",
+    "dev:stack": "concurrently -n api,web -c blue,green \"npm run dev -w @project-manager/api\" \"npm run dev -w @project-manager/web\"",
+    "dev:legacy": "npm run start -w @project-manager/legacy-backend",
+    "build": "npm run build -ws --if-present",
+    "lint": "npm run lint -ws --if-present",
+    "test": "npm run test -ws --if-present",
+    "db:migrate": "npm run db:migrate -w @project-manager/api",
+    "db:push": "npm run db:push -w @project-manager/api",
+    "db:seed": "npm run db:seed -w @project-manager/api"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.0"
   }
 }
