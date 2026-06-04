@@ -20,6 +20,8 @@ import type { AppDispatch, RootState } from 'context/store';
 // hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
+
 export const Register: FC = () => {
   const { toaster } = useToasterContext();
   const navigate = useNavigate();
@@ -36,16 +38,16 @@ export const Register: FC = () => {
   const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
     try {
       await dispatch(registerUser({
-        name: data.name!,
-        email: data.email!,
-        password: data.password!,
+        name: data.name,
+        email: data.email,
+        password: data.password,
       }));
 
       navigate('/', { replace: true });
 
       toaster?.show({ message: 'Регистрация успешна', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка регистрации: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка регистрации: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 

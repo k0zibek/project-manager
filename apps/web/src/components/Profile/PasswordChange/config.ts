@@ -24,7 +24,7 @@ export const PROFILE_PASSWORD_VALIDATION_SCHEMA = yup.object().shape({
 });
 
 export interface ProfilePasswordForm {
-  currentPassword?: string;
-  newPassword?: string;
-  confirmPassword?: string;
+  currentPassword: string;
+  newPassword: string;
+  confirmPassword: string;
 }

@@ -23,12 +23,20 @@ async function main() {
     avatarUrl: null,
   }).returning())[0];
 
-  if (!existing) {
+  const projectCount = await db.select().from(projects).where(eq(projects.ownerId, demo.id));
+
+  if (projectCount.length === 0) {
     const [project] = await db.insert(projects).values({
       ownerId: demo.id,
       name: 'Demo Project',
       description: 'Seeded project for local development',
     }).returning();
+
+    await db.insert(projects).values({
+      ownerId: demo.id,
+      name: 'Portfolio Backlog',
+      description: 'Second seeded project for list and pagination demos',
+    });
 
     await db.insert(tasks).values({
       projectId: project.id,

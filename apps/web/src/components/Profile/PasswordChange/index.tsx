@@ -1,5 +1,5 @@
 // libraries
-import { type FC } from 'react';
+import { type FC, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { useDispatch } from 'react-redux';
 import { Button, Card, Intent } from '@blueprintjs/core';
@@ -19,9 +19,12 @@ import type { AppDispatch } from 'context/store';
 // hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
+
 export const PasswordChange: FC = () => {
   const { toaster } = useToasterContext();
   const dispatch = useDispatch<AppDispatch>();
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const {
     control, handleSubmit, formState: { errors }, reset,
@@ -32,17 +35,24 @@ export const PasswordChange: FC = () => {
   });
 
   const handleSubmitPassword = async (data: ProfilePasswordForm) => {
+    setIsSubmitting(true);
+
     try {
       await dispatch(changeUserPassword({
-        currentPassword: data.currentPassword!,
-        newPassword: data.newPassword!,
+        currentPassword: data.currentPassword,
+        newPassword: data.newPassword,
       }));
 
       reset(PROFILE_PASSWORD_INITIAL_VALUES);
 
       toaster?.show({ message: 'Пароль успешно изменен', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при изменении пароля: ${err}`, intent: 'danger' });
+      toaster?.show({
+        message: `Ошибка при изменении пароля: ${getErrorMessage(err)}`,
+        intent: 'danger',
+      });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -74,7 +84,7 @@ export const PasswordChange: FC = () => {
           type="password"
         />
 
-        <Button intent={Intent.PRIMARY} text="Сохранить" type="submit" />
+        <Button intent={Intent.PRIMARY} loading={isSubmitting} text="Сохранить" type="submit" />
       </form>
     </Card>
   );

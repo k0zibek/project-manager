@@ -34,9 +34,9 @@ export const ToasterProvider: FC<ToasterProviderProps> = ({ children }) => {
     [toaster],
   );
 
-  if (!stateValue.toaster) {
-    return null;
-  }
-
-  return <ToasterProviderContext.Provider value={stateValue}>{children}</ToasterProviderContext.Provider>;
+  return (
+    <ToasterProviderContext.Provider value={stateValue}>
+      {children}
+    </ToasterProviderContext.Provider>
+  );
 };

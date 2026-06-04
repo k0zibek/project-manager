@@ -17,7 +17,7 @@ interface ButtonWithDialogFormProps {
   buttonText?: string
   dialogTitle: string
   fields: FieldDefinition[];
-  onSubmit: (values: any) => void;
+  onSubmit: (values: Record<string, string>) => void | Promise<void>;
   intent?: Intent,
   icon?: IconName,
   isMinimal?: boolean;
@@ -51,7 +51,7 @@ export const ButtonWithDialogForm: FC<ButtonWithDialogFormProps> = ({
     handleSubmit, control, formState: { errors }, reset,
   } = useForm({
     defaultValues,
-    resolver: yupResolver(validationSchema),
+    ...(validationSchema ? { resolver: yupResolver(validationSchema) } : {}),
     shouldFocusError: false,
   });
 
@@ -65,11 +65,12 @@ export const ButtonWithDialogForm: FC<ButtonWithDialogFormProps> = ({
   const onFormSubmit = async (data: Record<string, string>) => {
     setIsLoading(true);
 
-    onSubmit(data);
-
-    handleClose();
-
-    setIsLoading(false);
+    try {
+      await onSubmit(data);
+      handleClose();
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const actions = (
@@ -107,8 +108,8 @@ export const ButtonWithDialogForm: FC<ButtonWithDialogFormProps> = ({
                 error={errors[field.name]?.message as string | undefined}
                 label={field.label}
                 name={field.name}
-                placeholder={field.placeholder}
-                type={field.type}
+                placeholder={field.placeholder ?? ''}
+                type={field.type ?? 'text'}
               />
             )))}
           </DialogBody>

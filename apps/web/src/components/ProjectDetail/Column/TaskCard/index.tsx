@@ -17,7 +17,7 @@ export const TaskCard: FC<TaskCardProps> = ({ task }) => {
   const {
     attributes, listeners, setNodeRef, transform,
   } = useDraggable({
-    id: task.id.toString(),
+    id: task.id,
   });
 
   const style = transform ? {

@@ -1,69 +1,66 @@
 // libraries
-import { type FC, useState } from 'react';
-import { type FieldValues, type SubmitHandler, useForm } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
+import { type FC } from 'react';
+import { type SubmitHandler, useForm } from 'react-hook-form';
+import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import {
   Button, Card, Intent,
 } from '@blueprintjs/core';
-// actions
-import { deleteComment, fetchTaskComments, postComment } from 'context/actions/task/taskThunks';
 // components
 import { FormInputField } from 'components/shared/FormInputField';
 // constants
 import { type IComment } from 'constants/types';
 // store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
+import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useCreateComment, useDeleteComment } from 'features/tasks/hooks/useTasks';
+
+import { format } from 'date-fns';
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
+
+type CommentFormValues = {
+  comment: string;
+};
 
 interface TaskCommentProps {
   comments: IComment[];
+  projectId?: string;
 }
 
-export const TaskComments: FC<TaskCommentProps> = ({ comments }) => {
-  const dispatch = useDispatch<AppDispatch>();
+/** Task comments list with create/delete */
+export const TaskComments: FC<TaskCommentProps> = ({ comments, projectId }) => {
   const { toaster } = useToasterContext();
   const { taskId } = useParams();
   const { user } = useSelector((state: RootState) => state.auth);
-  const { control, handleSubmit, formState: { errors } } = useForm();
-  const [isLoading, setIsLoading] = useState(false);
+  const {
+    control, handleSubmit, reset, formState: { errors },
+  } = useForm<CommentFormValues>({ defaultValues: { comment: '' } });
 
-  const handlePostComment: SubmitHandler<FieldValues> = async (value: FieldValues) => {
-    if (!value.comment.trim() || !user) {
+  const createComment = useCreateComment(taskId ?? '', projectId);
+  const deleteComment = useDeleteComment(taskId ?? '');
+
+  const handlePostComment: SubmitHandler<CommentFormValues> = async (value) => {
+    if (!value.comment.trim() || !taskId) {
       return;
     }
 
     try {
-      setIsLoading(true);
+      await createComment.mutateAsync({ text: value.comment.trim() });
 
-      const comment: Omit<IComment, 'id'> = {
-        taskId: Number(taskId),
-        text: value.comment,
-        author: {
-          id: 1,
-          name: user.name,
-          avatarUrl: user.avatarUrl ?? '',
-        },
-      };
-
-      await dispatch(postComment(comment));
-
-      await dispatch(fetchTaskComments(taskId));
+      reset({ comment: '' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка добавления комментария: ${err}`, intent: 'danger' });
-    } finally {
-      setIsLoading(false);
+      toaster?.show({ message: `Ошибка добавления комментария: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 
-  const handleDeleteComment = async (commentId: number) => {
+  const handleDeleteComment = async (commentId: string) => {
     try {
-      await dispatch(deleteComment(commentId));
+      await deleteComment.mutateAsync(commentId);
 
       toaster?.show({ message: 'Комментарий удален', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка удаления комментария: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка удаления комментария: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 
@@ -78,19 +75,29 @@ export const TaskComments: FC<TaskCommentProps> = ({ comments }) => {
       <form className="comment-form" onSubmit={handleSubmit(handlePostComment)}>
         <FormInputField
           control={control}
-          error={errors.comment?.message as string | undefined}
+          error={errors.comment?.message}
           name="comment"
           placeholder="Ваш комментарий"
           type="text"
         />
 
-        <Button intent={Intent.PRIMARY} loading={isLoading} text="Оставить комментарий" type="submit" />
+        <Button
+          intent={Intent.PRIMARY}
+          loading={createComment.isPending}
+          text="Оставить комментарий"
+          type="submit"
+        />
       </form>
 
       {
           comments.length > 0 ? comments.map((comment) => (
             <Card key={comment.id} className="task-comment-card">
-              <img alt="ava" className="avatar-img" loading="lazy" src={comment.author.avatarUrl} />
+              <img
+                alt="ava"
+                className="avatar-img"
+                loading="lazy"
+                src={comment.author.avatarUrl ?? ''}
+              />
 
               <div className="comment-container">
                 <div className="task-comment-content">
@@ -103,13 +110,18 @@ export const TaskComments: FC<TaskCommentProps> = ({ comments }) => {
                   </p>
 
                   <p className="comment-date">
-                    {comment.createdAt}
+                    {format(new Date(comment.createdAt), 'dd.MM.yyyy HH:mm')}
                   </p>
                 </div>
 
-                { comment.author.id === 1
-                  ? <Button icon="trash" intent={Intent.DANGER} minimal onClick={() => handleDeleteComment(comment.id)} />
-                  : null}
+                {comment.author.id === user.id ? (
+                  <Button
+                    icon="trash"
+                    intent={Intent.DANGER}
+                    onClick={() => handleDeleteComment(comment.id)}
+                    variant="minimal"
+                  />
+                ) : null}
               </div>
             </Card>
           )) : (

@@ -1,6 +1,5 @@
 // libraries
 import { type FC } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Card,
   H4,
@@ -12,46 +11,29 @@ import { useDroppable } from '@dnd-kit/core';
 import { TaskCard } from 'components/ProjectDetail/Column/TaskCard';
 // constants
 import type { IColumn, ITask } from 'constants/types';
-// store
-import type { RootState } from 'context/store';
 
 interface ColumnProps {
   column: IColumn;
+  tasks: ITask[];
+  isUpdating?: boolean;
 }
 
-export const ProjectDetailColumn: FC<ColumnProps> = ({ column }) => {
-  const { setNodeRef } = useDroppable({ id: column.id });
-  const { tasks, loading, error } = useSelector((state: RootState) => state.tasks);
+/** Kanban column with tasks filtered by status */
+export const ProjectDetailColumn: FC<ColumnProps> = ({ column, tasks, isUpdating }) => {
+  const { setNodeRef, isOver } = useDroppable({ id: column.id });
 
-  const filteredTasks: ITask[] = tasks?.filter((task) => task.status === column.id);
-
-  if (loading) {
-    return (
-      <div className="loader-container">
-        <Spinner
-          aria-label="Loading..."
-          intent={Intent.NONE}
-          size={35}
-        />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="error-container">
-        {`Ошибка загрузки задач с сервера: ${error}`}
-      </div>
-    );
-  }
+  const filteredTasks = tasks.filter((task) => task.status === column.id);
 
   return (
-    <div ref={setNodeRef} className="task-column">
+    <div ref={setNodeRef} className={`task-column${isOver ? ' task-column--over' : ''}`}>
       <Card className="task-state-title-container">
-        <H4 className="task-state-title">{column.title}</H4>
+        <H4 className="task-state-title">
+          {column.title}
+          {isUpdating && <Spinner intent={Intent.NONE} size={16} />}
+        </H4>
       </Card>
 
-      {filteredTasks?.map((task) => (
+      {filteredTasks.map((task) => (
         <TaskCard key={task.id} task={task} />
       ))}
     </div>

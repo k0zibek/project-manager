@@ -17,6 +17,8 @@ import type { AppDispatch, RootState } from 'context/store';
 // hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
+
 export const Profile: FC = () => {
   const { toaster } = useToasterContext();
   const dispatch = useDispatch<AppDispatch>();
@@ -28,7 +30,7 @@ export const Profile: FC = () => {
 
       toaster?.show({ message: 'Имя успешно изменено', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при изменении имени: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка при изменении имени: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 

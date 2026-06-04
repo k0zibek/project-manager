@@ -15,6 +15,7 @@ import {
   registerApi,
   updateProfileApi,
 } from 'features/auth/api/authApi';
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 /** Restores session from GET /auth/me */
 export const bootstrapAuth = () => async (dispatch: AppDispatch) => {
@@ -38,7 +39,7 @@ export const loginUser = (credentials: LoginInput) => async (dispatch: AppDispat
 
     dispatch(authActions.setUser(user));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Login failed';
+    const message = getErrorMessage(error, 'Login failed');
 
     dispatch(authActions.setError(message));
 
@@ -55,7 +56,7 @@ export const registerUser = (data: RegisterInput) => async (dispatch: AppDispatc
 
     dispatch(authActions.setUser(user));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Registration failed';
+    const message = getErrorMessage(error, 'Registration failed');
 
     dispatch(authActions.setError(message));
 
@@ -79,9 +80,7 @@ export const updateUserProfile = (data: UpdateProfileInput) => async (dispatch: 
 
     dispatch(authActions.setUser(user));
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Update failed';
-
-    throw new Error(message);
+    throw new Error(getErrorMessage(error, 'Update failed'));
   }
 };
 
@@ -90,8 +89,6 @@ export const changeUserPassword = (data: ChangePasswordInput) => async () => {
   try {
     await changePasswordApi(data);
   } catch (error) {
-    const message = error instanceof Error ? error.message : 'Password change failed';
-
-    throw new Error(message);
+    throw new Error(getErrorMessage(error, 'Password change failed'));
   }
 };

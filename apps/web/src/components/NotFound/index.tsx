@@ -1,3 +1,6 @@
+import { Link } from 'react-router-dom';
+
+/** 404 page with router links */
 export const NotFound = () => (
   <div className="notfound-container">
     <div className="notfound-content">
@@ -15,9 +18,9 @@ export const NotFound = () => (
       </p>
 
       <nav className="notfound-nav">
-        <a className="notfound-link" href="/">home</a>
+        <Link className="notfound-link" to="/">home</Link>
         <span>&nbsp;|&nbsp;</span>
-        <a className="notfound-link" href="/login">login</a>
+        <Link className="notfound-link" to="/login">login</Link>
       </nav>
     </div>
   </div>

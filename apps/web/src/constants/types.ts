@@ -1,49 +1,28 @@
-import type { UserDTO } from '@project-manager/shared';
+import type {
+  CommentDTO,
+  ProjectDTO,
+  TaskDTO,
+  TaskUserDTO,
+  UserDTO,
+} from '@project-manager/shared';
 
-export interface IUser {
+export type IUser = {
   id: number;
   name: string;
   email: string;
   password: string;
   avatarUrl: string;
-}
+};
 
-export interface ITaskUser {
-  id: number;
-  name: string;
-  avatarUrl: string;
-}
+export type ITaskUser = TaskUserDTO;
 
-export interface IComment {
-  id: number;
-  taskId: number;
-  text: string;
-  author: ITaskUser | null;
-  createdAt?: string;
-}
+export type IComment = CommentDTO;
 
-export type ITaskStatus = 'TODO' | 'IN_PROGRESS' | 'DONE';
+export type ITaskStatus = TaskDTO['status'];
 
-export interface ITask {
-  id: number;
-  projectId: number;
-  assigneeId: number;
-  executorId: number;
-  title: string;
-  description: string;
-  deadline: string;
-  status: ITaskStatus;
-  files: FormData[];
-  createdAt?: string;
-  executor?: ITaskUser | null;
-  comments?: IComment[];
-}
+export type ITask = TaskDTO;
 
-export interface IProject {
-  id: number;
-  name: string;
-  description: string;
-}
+export type IProject = ProjectDTO;
 
 export type AuthStatus = 'idle' | 'loading' | 'authenticated' | 'unauthenticated';
 
@@ -53,24 +32,9 @@ export interface AuthState {
   error: string | null;
 }
 
-export interface ProjectsState {
-  projects: IProject[];
-  currentProject: IProject | null;
-  loading: boolean;
-  error: string | null;
-}
-
-export interface TasksState {
-  tasks: ITask[];
-  currentTask: ITask | null;
-  userTasks: ITask[];
-  loading: boolean;
-  error: string | null;
-}
-
 export interface LoginFormInputs {
-  email?: string;
-  password?: string;
+  email: string;
+  password: string;
 }
 
 export interface IColumn {

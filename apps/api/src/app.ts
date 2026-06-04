@@ -5,6 +5,8 @@ import type { Env } from './config/env.js';
 import { HttpError } from './lib/http-error.js';
 import { authRoutes } from './routes/auth.js';
 import { healthRoutes } from './routes/health.js';
+import { projectRoutes } from './routes/projects.js';
+import { taskRoutes } from './routes/tasks.js';
 
 /** Builds configured Fastify instance */
 export function buildApp(env: Env) {
@@ -44,6 +46,8 @@ export function buildApp(env: Env) {
 
   app.register(healthRoutes);
   app.register(authRoutes, { env });
+  app.register(projectRoutes, { env });
+  app.register(taskRoutes, { env });
 
   return app;
 }

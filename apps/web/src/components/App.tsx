@@ -16,27 +16,33 @@ import { store } from 'context/store';
 
 // components
 import { AuthBootstrap } from 'app/AuthBootstrap';
+import { ErrorBoundary } from 'app/ErrorBoundary';
+import { QueryProvider } from 'app/QueryProvider';
 
 const App: FC = () => (
-  <Provider store={store}>
-    <AuthBootstrap>
-      <Layout>
-        <Routes>
-          <Route path="/">
-            <Route element={<Home />} index />
-            <Route element={<Login />} path="login" />
-            <Route element={<Register />} path="register" />
-            <Route element={<ProtectedRoutes />}>
-              <Route element={<Profile />} path="profile" />
-              <Route element={<ProjectDetail />} path="project/:projectId" />
-              <Route element={<TaskDetail />} path="project/:projectId/task/:taskId" />
-            </Route>
-          </Route>
-          <Route element={<NotFound />} path="*" />
-        </Routes>
-      </Layout>
-    </AuthBootstrap>
-  </Provider>
+  <ErrorBoundary>
+    <Provider store={store}>
+      <QueryProvider>
+        <AuthBootstrap>
+          <Layout>
+            <Routes>
+              <Route path="/">
+                <Route element={<Home />} index />
+                <Route element={<Login />} path="login" />
+                <Route element={<Register />} path="register" />
+                <Route element={<ProtectedRoutes />}>
+                  <Route element={<Profile />} path="profile" />
+                  <Route element={<ProjectDetail />} path="project/:projectId" />
+                  <Route element={<TaskDetail />} path="project/:projectId/task/:taskId" />
+                </Route>
+              </Route>
+              <Route element={<NotFound />} path="*" />
+            </Routes>
+          </Layout>
+        </AuthBootstrap>
+      </QueryProvider>
+    </Provider>
+  </ErrorBoundary>
 );
 
 export default App;

@@ -18,6 +18,12 @@ import type { AppDispatch, RootState } from 'context/store';
 // hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
+
+type LoginLocationState = {
+  from?: { pathname?: string };
+};
+
 export const Login: FC = () => {
   const { toaster } = useToasterContext();
   const navigate = useNavigate();
@@ -31,7 +37,7 @@ export const Login: FC = () => {
     shouldFocusError: false,
   });
 
-  const from = (location.state)?.from?.pathname || '/';
+  const from = (location.state as LoginLocationState | null)?.from?.pathname ?? '/';
 
   const onSubmit: SubmitHandler<LoginFormInputs> = async (data: LoginFormInputs) => {
     try {
@@ -41,7 +47,7 @@ export const Login: FC = () => {
 
       toaster?.show({ message: 'Успех', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при входе: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка при входе: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 

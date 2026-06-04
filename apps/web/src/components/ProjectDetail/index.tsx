@@ -1,78 +1,87 @@
 // libraries
-import { type FC, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { type FC } from 'react';
+import { useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Divider, Intent, Spinner,
 } from '@blueprintjs/core';
 import { DndContext, type DragEndEvent } from '@dnd-kit/core';
-// actions
-import { fetchProjectById } from 'context/actions/project/projectThunks';
-import { fetchTasks, postTask, updateTask } from 'context/actions/task/taskThunks';
 // components
 import { ProjectDetailColumn } from 'components/ProjectDetail/Column';
 import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
 // constants
-import type { ITask, ITaskStatus } from 'constants/types';
+import type { ITaskStatus } from 'constants/types';
 // config
 import { COLUMNS, TASK_FIELDS, TASK_VALIDATION_SCHEMA } from 'components/ProjectDetail/config';
 // store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
+import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useProject } from 'features/projects/hooks/useProjects';
+import { useCreateTask, useProjectTasks, useUpdateTask } from 'features/tasks/hooks/useTasks';
 
-import { format } from 'date-fns';
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const ProjectDetail: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toaster } = useToasterContext();
   const { projectId } = useParams();
-  const dispatch = useDispatch<AppDispatch>();
-  const { currentProject, loading, error } = useSelector((state: RootState) => state.projects);
   const { user } = useSelector((state: RootState) => state.auth);
 
-  useEffect(() => {
-    if (!projectId) {
-      return;
-    }
+  const {
+    data: project,
+    isLoading: isProjectLoading,
+    isError: isProjectError,
+    error: projectError,
+  } = useProject(projectId);
 
-    dispatch(fetchProjectById(projectId));
-    dispatch(fetchTasks(projectId));
-  }, [dispatch, projectId]);
+  const {
+    data: tasks = [],
+    isLoading: isTasksLoading,
+    isError: isTasksError,
+    error: tasksError,
+  } = useProjectTasks(projectId);
 
-  const handleDragEnd = (event: DragEndEvent) => {
+  const createTask = useCreateTask(projectId ?? '');
+  const updateTask = useUpdateTask(projectId);
+
+  const handleDragEnd = async (event: DragEndEvent) => {
     const { active, over } = event;
 
-    if (!over) {
+    if (!over || !projectId) {
       return;
     }
 
     const taskId = String(active.id);
     const newStatus = over.id as ITaskStatus;
 
-    dispatch(updateTask(taskId, { status: newStatus }));
+    const task = tasks.find((item) => item.id === taskId);
+
+    if (!task || task.status === newStatus) {
+      return;
+    }
+
+    try {
+      await updateTask.mutateAsync({ taskId, data: { status: newStatus } });
+    } catch (err) {
+      toaster?.show({ message: `Ошибка при смене статуса: ${getErrorMessage(err)}`, intent: 'danger' });
+    }
   };
 
   const handleTaskSubmit = async (values: Record<string, string>) => {
+    if (!projectId) {
+      return;
+    }
+
     try {
-      const formattedDate = format(new Date(values.deadline), 'yyyy-MM-dd');
-
-      const newTask: Omit<ITask, 'id'> = {
-        projectId: Number(projectId),
-        assigneeId: 1,
-        executorId: 1,
+      await createTask.mutateAsync({
         title: values.title,
-        deadline: formattedDate,
-        status: 'TODO',
         description: values.description,
-        comments: [],
-        files: [],
-      };
-
-      await dispatch(postTask(newTask));
+        deadline: new Date(values.deadline),
+      });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при добавлении новой задачи: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка при добавлении новой задачи: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 
@@ -84,7 +93,7 @@ export const ProjectDetail: FC = () => {
     }
   };
 
-  if (loading || !user) {
+  if (isProjectLoading || isTasksLoading || !user) {
     return (
       <div className="loader-container">
         <Spinner
@@ -96,10 +105,13 @@ export const ProjectDetail: FC = () => {
     );
   }
 
-  if (error) {
+  if (isProjectError || isTasksError) {
+    const err = projectError ?? tasksError;
+    const message = getErrorMessage(err, 'Не удалось загрузить проект');
+
     return (
       <div className="error-container">
-        {`Ошибка загрузки проекта с сервера: ${error}`}
+        {`Ошибка загрузки проекта с сервера: ${message}`}
       </div>
     );
   }
@@ -109,7 +121,7 @@ export const ProjectDetail: FC = () => {
       <div className="project-header">
         <Button icon="arrow-left" minimal onClick={handleBack} text="Назад" />
 
-        <h1>{currentProject?.name}</h1>
+        <h1>{project?.name}</h1>
 
         <ButtonWithDialogForm
           buttonText="Добавить задачу"
@@ -130,6 +142,8 @@ export const ProjectDetail: FC = () => {
               <ProjectDetailColumn
                 key={column.id}
                 column={column}
+                isUpdating={updateTask.isPending}
+                tasks={tasks}
               />
             ))
           }

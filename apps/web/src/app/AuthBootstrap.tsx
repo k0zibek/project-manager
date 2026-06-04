@@ -1,8 +1,11 @@
 import { type FC, type ReactNode, useEffect } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Intent, Spinner } from '@blueprintjs/core';
+import { authActions } from 'context/actions/auth/authSlice';
 import { bootstrapAuth } from 'context/actions/auth/authThunks';
 import type { AppDispatch, RootState } from 'context/store';
+
+import { setUnauthorizedHandler } from 'shared/api/authSession';
 
 type AuthBootstrapProps = {
   children: ReactNode;
@@ -12,6 +15,14 @@ type AuthBootstrapProps = {
 export const AuthBootstrap: FC<AuthBootstrapProps> = ({ children }) => {
   const dispatch = useDispatch<AppDispatch>();
   const status = useSelector((state: RootState) => state.auth.status);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      dispatch(authActions.clearAuth());
+    });
+
+    return () => setUnauthorizedHandler(null);
+  }, [dispatch]);
 
   useEffect(() => {
     if (status === 'idle') {

@@ -15,7 +15,7 @@ export const REGISTER_VALIDATION_SCHEMA = yup.object().shape({
 });
 
 export interface RegisterFormInputs {
-  name?: string;
-  email?: string;
-  password?: string;
+  name: string;
+  email: string;
+  password: string;
 }

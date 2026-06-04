@@ -1,43 +1,46 @@
 // libraries
 import {
-  type ChangeEvent, type FC, useEffect, useState,
+  type ChangeEvent, type FC, useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import {
   Card, InputGroup, Intent, Spinner,
 } from '@blueprintjs/core';
-// actions
-import { fetchProjects, postProject } from 'context/actions/project/projectThunks';
 // components
 import { PaginationControls } from 'components/Home/PagiationControls';
 import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
 import { LinkButton } from 'components/shared/LinkButton';
-// constants
-import type { IProject } from 'constants/types';
 // config
 import { PROJECT_FIELDS, PROJECT_VALIDATION_SCHEMA } from 'components/Home/config';
 // store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
+import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useCreateProject, useProjects } from 'features/projects/hooks/useProjects';
+
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const Home: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const isAuthenticated = useSelector((state: RootState) => state.auth.status === 'authenticated');
-  const { projects, loading, error } = useSelector((state: RootState) => state.projects);
+  const authStatus = useSelector((state: RootState) => state.auth.status);
+  const isAuthenticated = authStatus === 'authenticated';
   const { toaster } = useToasterContext();
   const [query, setQuery] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pageSize: 6 });
+
+  const {
+    data: projects = [],
+    isLoading,
+    isError,
+    error,
+  } = useProjects(isAuthenticated);
+
+  const createProject = useCreateProject();
 
   const inputHandler = (e: ChangeEvent<HTMLInputElement>) => {
     setQuery(e.target.value);
 
     setPagination((prev) => ({ ...prev, page: 1 }));
   };
-
-  useEffect(() => {
-    dispatch(fetchProjects());
-  }, [dispatch]);
 
   const filteredProjects = query === ''
     ? projects
@@ -54,18 +57,18 @@ export const Home: FC = () => {
 
   const handleProjectSubmit = async (values: Record<string, string>) => {
     try {
-      const newProject: Omit<IProject, 'id'> = {
+      await createProject.mutateAsync({
         name: values.name,
         description: values.description,
-      };
-
-      await dispatch(postProject(newProject)).unwrap();
+      });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при создании проекта: ${err}`, intent: 'danger' });
+      const message = getErrorMessage(err);
+
+      toaster?.show({ message: `Ошибка при создании проекта: ${message}`, intent: 'danger' });
     }
   };
 
-  if (loading) {
+  if (isAuthenticated && isLoading) {
     return (
       <div className="loader-container">
         <Spinner
@@ -77,10 +80,12 @@ export const Home: FC = () => {
     );
   }
 
-  if (error) {
+  if (isAuthenticated && isError) {
+    const message = getErrorMessage(error, 'Не удалось загрузить проекты');
+
     return (
       <div className="error-container">
-        {`Ошибка загрузки проектов с сервера: ${error}`}
+        {`Ошибка загрузки проектов с сервера: ${message}`}
       </div>
     );
   }
@@ -129,12 +134,18 @@ export const Home: FC = () => {
               </div>
             ))
             : (
-              <div>Результата нет</div>
+              <div>{isAuthenticated ? 'Результата нет' : 'Войдите, чтобы увидеть свои проекты'}</div>
             )
         }
       </div>
 
-      <PaginationControls length={projects.length} pagination={pagination} setPagination={setPagination} />
+      {isAuthenticated && (
+        <PaginationControls
+          length={filteredProjects.length}
+          pagination={pagination}
+          setPagination={setPagination}
+        />
+      )}
 
     </div>
   );

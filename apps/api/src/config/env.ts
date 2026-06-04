@@ -11,12 +11,13 @@ const envSchema = z.object({
 
 export type Env = z.infer<typeof envSchema>;
 
-/** Validates process.env at startup */
+/** Validates process.env at startup (load vars via node --env-file=.env in scripts) */
 export function loadEnv(): Env {
   const parsed = envSchema.safeParse(process.env);
 
   if (!parsed.success) {
     console.error('Invalid environment variables:', parsed.error.flatten().fieldErrors);
+    console.error('Create apps/api/.env from .env.example and run via npm scripts (they pass --env-file).');
     process.exit(1);
   }
 

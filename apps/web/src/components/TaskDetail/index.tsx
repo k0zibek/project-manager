@@ -1,16 +1,14 @@
 // libraries
 import {
-  type ChangeEvent, type FC, useEffect, useState,
+  type ChangeEvent, type FC, useState,
 } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
+import { useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Card,
   Divider,
   Intent, Spinner,
 } from '@blueprintjs/core';
-// actions
-import { deleteTask, fetchTaskComments, updateTask } from 'context/actions/task/taskThunks';
 // components
 import { ButtonWithDialog } from 'components/shared/ButtonWithDialog';
 import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
@@ -26,9 +24,13 @@ import {
   type UploadStatusType,
 } from 'components/TaskDetail/config';
 // store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
+import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useDeleteTask, useTask, useUpdateTask } from 'features/tasks/hooks/useTasks';
+
+import { format } from 'date-fns';
+import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 const taskStatus = (status: string) => {
   if (status === 'IN_PROGRESS') {
@@ -45,20 +47,20 @@ export const TaskDetail: FC = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const { toaster } = useToasterContext();
-  const dispatch = useDispatch<AppDispatch>();
-  const { taskId } = useParams();
-  const { currentTask, loading, error } = useSelector((state: RootState) => state.tasks);
+  const { taskId, projectId } = useParams();
   const { user } = useSelector((state: RootState) => state.auth);
   const [files, setFiles] = useState<File[] | null>(null);
   const [fileStatus, setFileStatus] = useState<UploadStatusType>('idle');
 
-  useEffect(() => {
-    if (!taskId) {
-      return;
-    }
+  const {
+    data: task,
+    isLoading,
+    isError,
+    error,
+  } = useTask(taskId);
 
-    dispatch(fetchTaskComments(taskId));
-  }, [dispatch, taskId]);
+  const updateTask = useUpdateTask(projectId);
+  const deleteTask = useDeleteTask(projectId);
 
   const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
@@ -66,71 +68,57 @@ export const TaskDetail: FC = () => {
     }
   };
 
-  const handleFileUpload = async () => {
-    if (!files) {
-      return;
-    }
-
-    setFileStatus('uploading');
-
-    const formData = new FormData();
-
-    files.forEach((file, i) => {
-      formData.append(`file-${i}`, file, file.name);
-    });
-
-    try {
-      await dispatch(updateTask(taskId, { files: [formData] }));
-
-      toaster?.show({ message: 'Файл загружен', intent: 'success' });
-
-      setFileStatus('success');
-
-      await dispatch(fetchTaskComments(taskId));
-    } catch (err) {
-      toaster?.show({ message: `Ошибка при загрузке файла: ${err}`, intent: 'danger' });
-
-      setFileStatus('error');
-    }
+  const handleFileUpload = () => {
+    toaster?.show({ message: 'Загрузка файлов будет доступна позже', intent: 'warning' });
+    setFileStatus('idle');
   };
 
   const handleFileDelete = (fileName: string) => {
-    setFiles(files.filter((file) => file.name !== fileName));
+    setFiles((prev) => prev?.filter((file) => file.name !== fileName) ?? null);
   };
 
   const handleBack = () => {
     if (location.key === 'default') {
-      navigate('/');
+      navigate(projectId ? `/project/${projectId}` : '/');
     } else {
       navigate(-1);
     }
   };
 
   const handleDelete = async () => {
+    if (!taskId) {
+      return;
+    }
+
     try {
-      await dispatch(deleteTask(Number(taskId)));
+      await deleteTask.mutateAsync(taskId);
 
       handleBack();
 
       toaster?.show({ message: 'Задача удалена', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при удалении задачи: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка при удалении задачи: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 
-  const handleStatusSubmit = async (status: ITaskStatus) => {
-    try {
-      await dispatch(updateTask(taskId, { status }));
+  const handleStatusSubmit = async (values: Record<string, string>) => {
+    if (!taskId || !values.status) {
+      return;
+    }
 
-      await dispatch(fetchTaskComments(taskId));
+    try {
+      await updateTask.mutateAsync({
+        taskId,
+        data: { status: values.status as ITaskStatus },
+      });
 
       toaster?.show({ message: 'Статус задачи изменен', intent: 'success' });
     } catch (err) {
-      toaster?.show({ message: `Ошибка при изменении статуса задачи: ${err}`, intent: 'danger' });
+      toaster?.show({ message: `Ошибка при изменении статуса задачи: ${getErrorMessage(err)}`, intent: 'danger' });
     }
   };
 
-  if (loading || !currentTask?.comments) {
+  if (isLoading || !task) {
     return (
       <div className="loader-container">
         <Spinner
@@ -142,20 +130,25 @@ export const TaskDetail: FC = () => {
     );
   }
 
-  if (error) {
+  if (isError) {
+    const message = getErrorMessage(error, 'Не удалось загрузить задачу');
+
     return (
       <div className="error-container">
-        {`Ошибка загрузки задачи с сервера: ${error}`}
+        {`Ошибка загрузки задачи с сервера: ${message}`}
       </div>
     );
   }
+
+  const deadlineLabel = format(new Date(task.deadline), 'yyyy-MM-dd');
+  const canDelete = user && task.executorId === user.id;
 
   return (
     <div className="task-detail-container">
       <div className="task-header">
         <Button icon="arrow-left" minimal onClick={handleBack} text="Назад" />
 
-        <h1 className="task-header-title">{currentTask?.title}</h1>
+        <h1 className="task-header-title">{task.title}</h1>
 
         <div className="task-btn-container">
           <ButtonWithDialogForm
@@ -167,16 +160,14 @@ export const TaskDetail: FC = () => {
             validationSchema={TASK_STATUS_VALIDATION_SCHEMA}
           />
 
-          { user && currentTask.executorId === 1
-            ? (
-              <ButtonWithDialog
-                buttonText="Удалить"
-                dialogTitle="Вы уверены?"
-                handleClick={handleDelete}
-                intent={Intent.DANGER}
-              />
-            )
-            : null}
+          {canDelete ? (
+            <ButtonWithDialog
+              buttonText="Удалить"
+              dialogTitle="Вы уверены?"
+              handleClick={handleDelete}
+              intent={Intent.DANGER}
+            />
+          ) : null}
         </div>
       </div>
 
@@ -185,24 +176,24 @@ export const TaskDetail: FC = () => {
       <Card className="task-detail-card">
         <p>
           <strong>📝 Описание задачи:</strong>
-          {` ${currentTask?.description}`}
+          {` ${task.description}`}
         </p>
 
         <p>
           <strong>🏷️ Исполнитель:</strong>
-          {` ${currentTask?.executor?.name}`}
+          {` ${task.executor?.name ?? '—'}`}
         </p>
 
         <p>
           <strong>📅 Дедлайн:</strong>
-          {` ${currentTask?.deadline}`}
+          {` ${deadlineLabel}`}
         </p>
 
         <p>
           <strong>
-            {`${currentTask?.status === 'DONE' ? '✅' : '🔄'} Статус: `}
+            {`${task.status === 'DONE' ? '✅' : '🔄'} Статус: `}
           </strong>
-          {taskStatus(currentTask?.status)}
+          {taskStatus(task.status)}
         </p>
       </Card>
 
@@ -260,7 +251,7 @@ export const TaskDetail: FC = () => {
 
       <Divider />
 
-      <TaskComments comments={currentTask?.comments} />
+      <TaskComments comments={task.comments ?? []} projectId={projectId} />
     </div>
   );
 };
