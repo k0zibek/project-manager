@@ -1,9 +1,7 @@
-import type { FastifyPluginAsync, FastifyReply } from 'fastify';
+import type { FastifyPluginAsync } from 'fastify';
 import rateLimit from '@fastify/rate-limit';
-import { ZodError } from 'zod';
 import type { Env } from '../config/env.js';
 import { clearAuthCookies, setAuthCookies } from '../lib/cookies.js';
-import { HttpError } from '../lib/http-error.js';
 import { requireAuth } from '../middleware/require-auth.js';
 import * as authService from '../services/auth.service.js';
 
@@ -21,15 +19,11 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opts
   });
 
   app.post('/auth/register', async (request, reply) => {
-    try {
-      const result = await authService.registerUser(env, request.body);
+    const result = await authService.registerUser(env, request.body);
 
-      setAuthCookies(reply, result.tokens, secure);
+    setAuthCookies(reply, result.tokens, secure);
 
-      return reply.status(201).send({ user: result.user });
-    } catch (error) {
-      return handleAuthError(error, reply);
-    }
+    return reply.status(201).send({ user: result.user });
   });
 
   app.post('/auth/login', {
@@ -40,15 +34,11 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opts
       },
     },
   }, async (request, reply) => {
-    try {
-      const result = await authService.loginUser(env, request.body);
+    const result = await authService.loginUser(env, request.body);
 
-      setAuthCookies(reply, result.tokens, secure);
+    setAuthCookies(reply, result.tokens, secure);
 
-      return { user: result.user };
-    } catch (error) {
-      return handleAuthError(error, reply);
-    }
+    return { user: result.user };
   });
 
   app.post('/auth/logout', async (_request, reply) => {
@@ -58,52 +48,24 @@ export const authRoutes: FastifyPluginAsync<AuthRouteOptions> = async (app, opts
   });
 
   app.get('/auth/me', async (request, reply) => {
-    try {
-      const userId = await requireAuth(request, reply, env);
-      const user = await authService.getUserById(userId);
+    const userId = await requireAuth(request, reply, env);
+    const user = await authService.getUserById(userId);
 
-      return { user };
-    } catch (error) {
-      return handleAuthError(error, reply);
-    }
+    return { user };
   });
 
   app.patch('/auth/me', async (request, reply) => {
-    try {
-      const userId = await requireAuth(request, reply, env);
-      const user = await authService.updateProfile(userId, request.body);
+    const userId = await requireAuth(request, reply, env);
+    const user = await authService.updateProfile(userId, request.body);
 
-      return { user };
-    } catch (error) {
-      return handleAuthError(error, reply);
-    }
+    return { user };
   });
 
   app.patch('/auth/password', async (request, reply) => {
-    try {
-      const userId = await requireAuth(request, reply, env);
+    const userId = await requireAuth(request, reply, env);
 
-      await authService.changePassword(userId, request.body);
+    await authService.changePassword(userId, request.body);
 
-      return reply.status(204).send();
-    } catch (error) {
-      return handleAuthError(error, reply);
-    }
+    return reply.status(204).send();
   });
 };
-
-function handleAuthError(error: unknown, reply: FastifyReply) {
-  if (error instanceof HttpError) {
-    return reply.status(error.statusCode).send({
-      error: { code: error.code, message: error.message },
-    });
-  }
-
-  if (error instanceof ZodError) {
-    return reply.status(400).send({
-      error: { code: 'VALIDATION_ERROR', message: error.errors[0]?.message ?? 'Invalid input' },
-    });
-  }
-
-  throw error;
-}

@@ -8,6 +8,7 @@ import { projects } from '../db/schema.js';
 import { getDb } from '../lib/db.js';
 import { HttpError } from '../lib/http-error.js';
 import { toProjectDto } from '../lib/project-mapper.js';
+import { assertProjectOwner } from '../lib/task-access.js';
 
 /** Lists projects owned by the user */
 export async function listProjectsForOwner(ownerId: string): Promise<ProjectDTO[]> {
@@ -19,9 +20,7 @@ export async function listProjectsForOwner(ownerId: string): Promise<ProjectDTO[
 
 /** Returns a project if the user is the owner */
 export async function getProjectForOwner(projectId: string, ownerId: string): Promise<ProjectDTO> {
-  const project = await findProjectById(projectId);
-
-  assertOwner(project, ownerId);
+  const project = await assertProjectOwner(projectId, ownerId);
 
   return toProjectDto(project);
 }
@@ -52,9 +51,7 @@ export async function updateProject(
     throw new HttpError(400, 'VALIDATION_ERROR', 'No fields to update');
   }
 
-  const existing = await findProjectById(projectId);
-
-  assertOwner(existing, ownerId);
+  await assertProjectOwner(projectId, ownerId);
 
   const db = getDb();
   const [project] = await db.update(projects).set(data).where(eq(projects.id, projectId)).returning();
@@ -64,28 +61,9 @@ export async function updateProject(
 
 /** Deletes a project owned by the user */
 export async function deleteProject(projectId: string, ownerId: string): Promise<void> {
-  const existing = await findProjectById(projectId);
-
-  assertOwner(existing, ownerId);
+  await assertProjectOwner(projectId, ownerId);
 
   const db = getDb();
 
   await db.delete(projects).where(eq(projects.id, projectId));
-}
-
-async function findProjectById(projectId: string) {
-  const db = getDb();
-  const project = await db.select().from(projects).where(eq(projects.id, projectId)).get();
-
-  if (!project) {
-    throw new HttpError(404, 'NOT_FOUND', 'Project not found');
-  }
-
-  return project;
-}
-
-function assertOwner(project: typeof projects.$inferSelect, ownerId: string) {
-  if (project.ownerId !== ownerId) {
-    throw new HttpError(403, 'FORBIDDEN', 'You do not have access to this project');
-  }
 }

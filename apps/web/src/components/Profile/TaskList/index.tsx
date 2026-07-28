@@ -1,11 +1,9 @@
 // libraries
 import { type FC } from 'react';
-import { useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Card, Intent, Spinner } from '@blueprintjs/core';
-// store
-import type { RootState } from 'context/store';
 // hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 import { useMyTasks } from 'features/tasks/hooks/useTasks';
 
 import { format } from 'date-fns';
@@ -13,8 +11,8 @@ import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 /** Lists tasks assigned to the current user */
 export const TaskList: FC = () => {
-  const authStatus = useSelector((state: RootState) => state.auth.status);
-  const isAuthenticated = authStatus === 'authenticated';
+  const { data: user } = useMe();
+  const isAuthenticated = Boolean(user);
 
   const {
     data: tasks = [],

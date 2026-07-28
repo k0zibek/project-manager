@@ -22,13 +22,20 @@ export async function assertProjectOwner(projectId: string, ownerId: string) {
 /** Loads a task and verifies the user owns its project */
 export async function assertTaskOwner(taskId: string, ownerId: string) {
   const db = getDb();
-  const task = await db.select().from(tasks).where(eq(tasks.id, taskId)).get();
+  const row = await db
+    .select({ task: tasks, project: projects })
+    .from(tasks)
+    .innerJoin(projects, eq(tasks.projectId, projects.id))
+    .where(eq(tasks.id, taskId))
+    .get();
 
-  if (!task) {
+  if (!row) {
     throw new HttpError(404, 'NOT_FOUND', 'Task not found');
   }
 
-  await assertProjectOwner(task.projectId, ownerId);
+  if (row.project.ownerId !== ownerId) {
+    throw new HttpError(403, 'FORBIDDEN', 'You do not have access to this project');
+  }
 
-  return task;
+  return row.task;
 }

@@ -1,12 +1,9 @@
 // libraries
 import { type FC } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Intent } from '@blueprintjs/core';
 import { yupResolver } from '@hookform/resolvers/yup';
-// actions
-import { registerUser } from 'context/actions/auth/authThunks';
 // components
 import { FormInputField } from 'components/shared/FormInputField';
 // config
@@ -15,19 +12,16 @@ import {
   REGISTER_VALIDATION_SCHEMA,
   type RegisterFormInputs,
 } from 'components/Register/config';
-// store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useRegister } from 'features/auth/hooks/useAuth';
 
 import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const Register: FC = () => {
   const { toaster } = useToasterContext();
   const navigate = useNavigate();
-  const dispatch = useDispatch<AppDispatch>();
-  const { status, error } = useSelector((state: RootState) => state.auth);
-  const isLoading = status === 'loading';
+  const register = useRegister();
 
   const { control, handleSubmit, formState: { errors } } = useForm<RegisterFormInputs>({
     defaultValues: REGISTER_INITIAL_VALUES,
@@ -37,11 +31,11 @@ export const Register: FC = () => {
 
   const onSubmit: SubmitHandler<RegisterFormInputs> = async (data) => {
     try {
-      await dispatch(registerUser({
+      await register.mutateAsync({
         name: data.name,
         email: data.email,
         password: data.password,
-      }));
+      });
 
       navigate('/', { replace: true });
 
@@ -83,16 +77,16 @@ export const Register: FC = () => {
             type="password"
           />
 
-          {error && (
+          {register.isError && (
             <div className="form-error-container" style={{ color: 'red', marginBottom: '1rem' }}>
-              {error}
+              {getErrorMessage(register.error)}
             </div>
           )}
 
           <Button
             fill
             intent={Intent.PRIMARY}
-            loading={isLoading}
+            loading={register.isPending}
             text="Зарегистрироваться"
             type="submit"
           />

@@ -2,7 +2,6 @@
 import {
   type ChangeEvent, type FC, useState,
 } from 'react';
-import { useSelector } from 'react-redux';
 import {
   Card, InputGroup, Intent, Spinner,
 } from '@blueprintjs/core';
@@ -12,17 +11,16 @@ import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
 import { LinkButton } from 'components/shared/LinkButton';
 // config
 import { PROJECT_FIELDS, PROJECT_VALIDATION_SCHEMA } from 'components/Home/config';
-// store
-import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 // hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 import { useCreateProject, useProjects } from 'features/projects/hooks/useProjects';
 
 import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const Home: FC = () => {
-  const authStatus = useSelector((state: RootState) => state.auth.status);
-  const isAuthenticated = authStatus === 'authenticated';
+  const { data: user } = useMe();
+  const isAuthenticated = Boolean(user);
   const { toaster } = useToasterContext();
   const [query, setQuery] = useState('');
   const [pagination, setPagination] = useState({ page: 1, pageSize: 6 });
@@ -49,7 +47,7 @@ export const Home: FC = () => {
   const totalPages = Math.ceil(filteredProjects.length / pagination.pageSize);
 
   if (pagination.page > totalPages && totalPages > 0) {
-    setPagination((prev) => ({ ...prev, page: 1 }));
+    setPagination((prev) => ({ ...prev, page: totalPages }));
   }
 
   const startIndex = (pagination.page - 1) * pagination.pageSize;

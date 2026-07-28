@@ -1,11 +1,8 @@
 // libraries
-import { type FC, useState } from 'react';
+import { type FC } from 'react';
 import { useForm } from 'react-hook-form';
-import { useDispatch } from 'react-redux';
 import { Button, Card, Intent } from '@blueprintjs/core';
 import { yupResolver } from '@hookform/resolvers/yup';
-// actions
-import { changeUserPassword } from 'context/actions/auth/authThunks';
 // components
 import { FormInputField } from 'components/shared/FormInputField';
 // constants
@@ -14,17 +11,15 @@ import {
   PROFILE_PASSWORD_VALIDATION_SCHEMA,
   type ProfilePasswordForm,
 } from 'components/Profile/PasswordChange/config';
-// store
-import type { AppDispatch } from 'context/store';
-// hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useChangePassword } from 'features/auth/hooks/useAuth';
 
 import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const PasswordChange: FC = () => {
   const { toaster } = useToasterContext();
-  const dispatch = useDispatch<AppDispatch>();
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const changePassword = useChangePassword();
 
   const {
     control, handleSubmit, formState: { errors }, reset,
@@ -35,13 +30,11 @@ export const PasswordChange: FC = () => {
   });
 
   const handleSubmitPassword = async (data: ProfilePasswordForm) => {
-    setIsSubmitting(true);
-
     try {
-      await dispatch(changeUserPassword({
+      await changePassword.mutateAsync({
         currentPassword: data.currentPassword,
         newPassword: data.newPassword,
-      }));
+      });
 
       reset(PROFILE_PASSWORD_INITIAL_VALUES);
 
@@ -51,8 +44,6 @@ export const PasswordChange: FC = () => {
         message: `Ошибка при изменении пароля: ${getErrorMessage(err)}`,
         intent: 'danger',
       });
-    } finally {
-      setIsSubmitting(false);
     }
   };
 
@@ -84,7 +75,7 @@ export const PasswordChange: FC = () => {
           type="password"
         />
 
-        <Button intent={Intent.PRIMARY} loading={isSubmitting} text="Сохранить" type="submit" />
+        <Button intent={Intent.PRIMARY} loading={changePassword.isPending} text="Сохранить" type="submit" />
       </form>
     </Card>
   );

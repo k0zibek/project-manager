@@ -1,32 +1,28 @@
 // libraries
 import { type FC } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import {
   Card, Intent,
 } from '@blueprintjs/core';
-// actions
-import { updateUserProfile } from 'context/actions/auth/authThunks';
 // components
 import { PasswordChange } from 'components/Profile/PasswordChange';
 import { TaskList } from 'components/Profile/TaskList';
 import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
 // config
 import { PROFILE_FIELDS, PROFILE_NAME_VALIDATION_SCHEMA } from 'components/Profile/config';
-// store
-import type { AppDispatch, RootState } from 'context/store';
-// hooks
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
+// hooks
+import { useMe, useUpdateProfile } from 'features/auth/hooks/useAuth';
 
 import { getErrorMessage } from 'shared/errors/getErrorMessage';
 
 export const Profile: FC = () => {
   const { toaster } = useToasterContext();
-  const dispatch = useDispatch<AppDispatch>();
-  const { user, error } = useSelector((state: RootState) => state.auth);
+  const { data: user, isError, error } = useMe();
+  const updateProfile = useUpdateProfile();
 
   const handleSubmitName = async (values: Record<string, string>) => {
     try {
-      await dispatch(updateUserProfile({ name: values.name }));
+      await updateProfile.mutateAsync({ name: values.name });
 
       toaster?.show({ message: 'Имя успешно изменено', intent: 'success' });
     } catch (err) {
@@ -34,10 +30,10 @@ export const Profile: FC = () => {
     }
   };
 
-  if (error) {
+  if (isError) {
     return (
       <div className="error-container">
-        {`Ошибка загрузки пользователя: ${error}`}
+        {`Ошибка загрузки пользователя: ${getErrorMessage(error)}`}
       </div>
     );
   }

@@ -1,16 +1,15 @@
 // libraries
-import { useSelector } from 'react-redux';
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { Intent, Spinner } from '@blueprintjs/core';
-// store
-import type { RootState } from 'context/store';
+// hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 
 /** Guards routes that require authentication */
 export const ProtectedRoutes = () => {
-  const { status } = useSelector((state: RootState) => state.auth);
+  const { data: user, isLoading } = useMe();
   const location = useLocation();
 
-  if (status === 'loading' || status === 'idle') {
+  if (isLoading) {
     return (
       <div className="loader-container">
         <Spinner aria-label="Loading..." intent={Intent.NONE} size={35} />
@@ -18,7 +17,7 @@ export const ProtectedRoutes = () => {
     );
   }
 
-  if (status === 'authenticated') {
+  if (user) {
     return <Outlet />;
   }
 

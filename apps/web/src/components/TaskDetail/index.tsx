@@ -1,8 +1,5 @@
 // libraries
-import {
-  type ChangeEvent, type FC, useState,
-} from 'react';
-import { useSelector } from 'react-redux';
+import { type FC } from 'react';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Card,
@@ -17,16 +14,12 @@ import { TaskComments } from 'components/TaskDetail/TaskComments';
 import type { ITaskStatus } from 'constants/types';
 // config
 import {
-  BYTE,
-  FIXED_VALUE,
   TASK_STATUS_FIELDS,
   TASK_STATUS_VALIDATION_SCHEMA,
-  type UploadStatusType,
 } from 'components/TaskDetail/config';
-// store
-import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 // hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 import { useDeleteTask, useTask, useUpdateTask } from 'features/tasks/hooks/useTasks';
 
 import { format } from 'date-fns';
@@ -48,9 +41,7 @@ export const TaskDetail: FC = () => {
   const location = useLocation();
   const { toaster } = useToasterContext();
   const { taskId, projectId } = useParams();
-  const { user } = useSelector((state: RootState) => state.auth);
-  const [files, setFiles] = useState<File[] | null>(null);
-  const [fileStatus, setFileStatus] = useState<UploadStatusType>('idle');
+  const { data: user } = useMe();
 
   const {
     data: task,
@@ -61,21 +52,6 @@ export const TaskDetail: FC = () => {
 
   const updateTask = useUpdateTask(projectId);
   const deleteTask = useDeleteTask(projectId);
-
-  const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      setFiles([...e.target.files]);
-    }
-  };
-
-  const handleFileUpload = () => {
-    toaster?.show({ message: 'Загрузка файлов будет доступна позже', intent: 'warning' });
-    setFileStatus('idle');
-  };
-
-  const handleFileDelete = (fileName: string) => {
-    setFiles((prev) => prev?.filter((file) => file.name !== fileName) ?? null);
-  };
 
   const handleBack = () => {
     if (location.key === 'default') {
@@ -141,7 +117,9 @@ export const TaskDetail: FC = () => {
   }
 
   const deadlineLabel = format(new Date(task.deadline), 'yyyy-MM-dd');
-  const canDelete = user && task.executorId === user.id;
+  // The API only ever returns a task here if the caller owns its project (assertTaskOwner),
+  // so reaching this page already implies delete permission — no separate field to check.
+  const canDelete = Boolean(user);
 
   return (
     <div className="task-detail-container">
@@ -195,58 +173,6 @@ export const TaskDetail: FC = () => {
           </strong>
           {taskStatus(task.status)}
         </p>
-      </Card>
-
-      <Card className="task-files">
-        <h2>📎 Файлы</h2>
-
-        <div className="task-files-btn-container">
-          <Button text="Список файлов" />
-
-          <label className="file-upload-btn" htmlFor="file-upload-input">
-            Выбрать файлы
-          </label>
-          <input
-            accept="image/jpeg"
-            id="file-upload-input"
-            multiple
-            onChange={handleFileChange}
-            placeholder="Выбрать"
-            type="file"
-          />
-        </div>
-
-        <div>
-          {files && files.map((file, index) => (
-            <Card key={file.name} className="file-info">
-              <div>
-                <p>
-                  <strong>
-                    {`${index + 1}. ${file.name}`}
-                  </strong>
-                </p>
-
-                <p>
-                  {`Размер файла: ${(file.size / BYTE).toFixed(FIXED_VALUE)} KB`}
-                </p>
-
-                <p>
-                  {`Тип файла: ${file.type}`}
-                </p>
-              </div>
-
-              <Button icon="delete" intent={Intent.DANGER} minimal onClick={() => handleFileDelete(file.name)} />
-            </Card>
-          ))}
-
-          {files && files.length > 0
-              && fileStatus !== 'uploading'
-              && <Button onClick={handleFileUpload} text="Загрузить" />}
-
-          {fileStatus === 'success' && <p className="success-container">Файлы успешно загружены!</p>}
-
-          {fileStatus === 'error' && <p className="error-container">Ошибка попробуйте позже</p>}
-        </div>
       </Card>
 
       <Divider />

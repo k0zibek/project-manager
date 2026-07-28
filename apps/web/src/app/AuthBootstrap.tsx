@@ -1,10 +1,9 @@
 import { type FC, type ReactNode, useEffect } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Intent, Spinner } from '@blueprintjs/core';
-import { authActions } from 'context/actions/auth/authSlice';
-import { bootstrapAuth } from 'context/actions/auth/authThunks';
-import type { AppDispatch, RootState } from 'context/store';
+import { useQueryClient } from '@tanstack/react-query';
+import { useMe } from 'features/auth/hooks/useAuth';
 
+import { authKeys } from 'features/auth/queryKeys';
 import { setUnauthorizedHandler } from 'shared/api/authSession';
 
 type AuthBootstrapProps = {
@@ -13,24 +12,18 @@ type AuthBootstrapProps = {
 
 /** Loads session on app start via GET /auth/me */
 export const AuthBootstrap: FC<AuthBootstrapProps> = ({ children }) => {
-  const dispatch = useDispatch<AppDispatch>();
-  const status = useSelector((state: RootState) => state.auth.status);
+  const queryClient = useQueryClient();
+  const { isLoading } = useMe();
 
   useEffect(() => {
     setUnauthorizedHandler(() => {
-      dispatch(authActions.clearAuth());
+      queryClient.setQueryData(authKeys.me(), null);
     });
 
     return () => setUnauthorizedHandler(null);
-  }, [dispatch]);
+  }, [queryClient]);
 
-  useEffect(() => {
-    if (status === 'idle') {
-      dispatch(bootstrapAuth());
-    }
-  }, [dispatch, status]);
-
-  if (status === 'idle' || status === 'loading') {
+  if (isLoading) {
     return (
       <div className="loader-container">
         <Spinner aria-label="Loading session..." intent={Intent.NONE} size={35} />

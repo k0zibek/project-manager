@@ -1,11 +1,5 @@
 import * as yup from 'yup';
 
-export const BYTE = 1024;
-
-export const FIXED_VALUE = 2;
-
-export type UploadStatusType = 'idle' | 'uploading' | 'error' | 'success';
-
 export const TASK_STATUS_FIELDS = [
   {
     name: 'status',

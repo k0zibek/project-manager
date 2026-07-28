@@ -1,6 +1,7 @@
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import Fastify from 'fastify';
+import { ZodError } from 'zod';
 import type { Env } from './config/env.js';
 import { HttpError } from './lib/http-error.js';
 import { authRoutes } from './routes/auth.js';
@@ -29,6 +30,12 @@ export function buildApp(env: Env) {
     if (error instanceof HttpError) {
       return reply.status(error.statusCode).send({
         error: { code: error.code, message: error.message },
+      });
+    }
+
+    if (error instanceof ZodError) {
+      return reply.status(400).send({
+        error: { code: 'VALIDATION_ERROR', message: error.errors[0]?.message ?? 'Invalid input' },
       });
     }
 

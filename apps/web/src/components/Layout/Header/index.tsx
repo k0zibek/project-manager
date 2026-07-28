@@ -1,24 +1,21 @@
 // libraries
 import type { FC } from 'react';
-import { useDispatch, useSelector } from 'react-redux';
 import { Link } from 'react-router-dom';
 import { Intent } from '@blueprintjs/core';
-import { selectIsAuthenticated } from 'context/actions/auth/authSlice';
-// actions
-import { logoutUser } from 'context/actions/auth/authThunks';
 // components
 import { LinkButton } from 'components/shared/LinkButton';
-// store
-import type { AppDispatch } from 'context/store';
+// hooks
+import { useLogout, useMe } from 'features/auth/hooks/useAuth';
 // assets
 import logoPng from 'assets/icons/logo.png';
 
 export const Header: FC = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const isAuthenticated = useSelector(selectIsAuthenticated);
+  const { data: user } = useMe();
+  const isAuthenticated = Boolean(user);
+  const logout = useLogout();
 
   const handleLogout = () => {
-    dispatch(logoutUser());
+    logout.mutate();
   };
 
   return (

@@ -1,6 +1,5 @@
 // libraries
 import { type FC } from 'react';
-import { useSelector } from 'react-redux';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import {
   Button, Divider, Intent, Spinner,
@@ -13,10 +12,9 @@ import { ButtonWithDialogForm } from 'components/shared/ButtonWithDialogForm';
 import type { ITaskStatus } from 'constants/types';
 // config
 import { COLUMNS, TASK_FIELDS, TASK_VALIDATION_SCHEMA } from 'components/ProjectDetail/config';
-// store
-import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 // hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 import { useProject } from 'features/projects/hooks/useProjects';
 import { useCreateTask, useProjectTasks, useUpdateTask } from 'features/tasks/hooks/useTasks';
 
@@ -27,7 +25,7 @@ export const ProjectDetail: FC = () => {
   const location = useLocation();
   const { toaster } = useToasterContext();
   const { projectId } = useParams();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { data: user } = useMe();
 
   const {
     data: project,

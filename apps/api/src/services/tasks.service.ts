@@ -5,7 +5,7 @@ import {
   type CommentDTO,
   type TaskDTO,
 } from '@project-manager/shared';
-import { and, eq } from 'drizzle-orm';
+import { eq } from 'drizzle-orm';
 import { comments, projects, tasks, users } from '../db/schema.js';
 import { getDb } from '../lib/db.js';
 import { HttpError } from '../lib/http-error.js';
@@ -17,38 +17,27 @@ export async function listTasksByProject(projectId: string, ownerId: string): Pr
   await assertProjectOwner(projectId, ownerId);
 
   const db = getDb();
-  const rows = await db.select().from(tasks).where(eq(tasks.projectId, projectId));
+  const rows = await db
+    .select({ task: tasks, executor: users })
+    .from(tasks)
+    .innerJoin(users, eq(tasks.executorId, users.id))
+    .where(eq(tasks.projectId, projectId));
 
-  const result: TaskDTO[] = [];
-
-  for (const task of rows) {
-    const executor = await db.select().from(users).where(eq(users.id, task.executorId)).get();
-
-    result.push(toTaskDto(task, executor ?? null));
-  }
-
-  return result;
+  return rows.map(({ task, executor }) => toTaskDto(task, executor));
 }
 
-/** Lists tasks assigned to the user on their own projects */
+/** Lists tasks in all projects owned by the user */
 export async function listTasksForUser(ownerId: string): Promise<TaskDTO[]> {
   const db = getDb();
 
   const rows = await db
-    .select({ task: tasks, project: projects })
+    .select({ task: tasks, executor: users })
     .from(tasks)
     .innerJoin(projects, eq(tasks.projectId, projects.id))
-    .where(and(eq(projects.ownerId, ownerId), eq(tasks.executorId, ownerId)));
+    .innerJoin(users, eq(tasks.executorId, users.id))
+    .where(eq(projects.ownerId, ownerId));
 
-  const result: TaskDTO[] = [];
-
-  for (const { task } of rows) {
-    const executor = await db.select().from(users).where(eq(users.id, task.executorId)).get();
-
-    result.push(toTaskDto(task, executor ?? null));
-  }
-
-  return result;
+  return rows.map(({ task, executor }) => toTaskDto(task, executor));
 }
 
 /** Returns task detail with comments */
@@ -57,19 +46,13 @@ export async function getTaskById(taskId: string, ownerId: string): Promise<Task
   const db = getDb();
 
   const executor = await db.select().from(users).where(eq(users.id, task.executorId)).get();
-  const commentRows = await db.select().from(comments).where(eq(comments.taskId, taskId));
+  const commentRows = await db
+    .select({ comment: comments, author: users })
+    .from(comments)
+    .innerJoin(users, eq(comments.authorId, users.id))
+    .where(eq(comments.taskId, taskId));
 
-  const taskComments = await Promise.all(commentRows.map(async (comment) => {
-    const author = await db.select().from(users).where(eq(users.id, comment.authorId)).get();
-
-    if (!author) {
-      throw new HttpError(500, 'INTERNAL_ERROR', 'Comment author not found');
-    }
-
-    return { comment, author };
-  }));
-
-  return toTaskDto(task, executor ?? null, taskComments);
+  return toTaskDto(task, executor ?? null, commentRows);
 }
 
 /** Creates a task in an owned project */
@@ -135,21 +118,13 @@ export async function listComments(taskId: string, ownerId: string): Promise<Com
   await assertTaskOwner(taskId, ownerId);
 
   const db = getDb();
-  const commentRows = await db.select().from(comments).where(eq(comments.taskId, taskId));
+  const rows = await db
+    .select({ comment: comments, author: users })
+    .from(comments)
+    .innerJoin(users, eq(comments.authorId, users.id))
+    .where(eq(comments.taskId, taskId));
 
-  const result: CommentDTO[] = [];
-
-  for (const comment of commentRows) {
-    const author = await db.select().from(users).where(eq(users.id, comment.authorId)).get();
-
-    if (!author) {
-      throw new HttpError(500, 'INTERNAL_ERROR', 'Comment author not found');
-    }
-
-    result.push(toCommentDto(comment, author));
-  }
-
-  return result;
+  return rows.map(({ comment, author }) => toCommentDto(comment, author));
 }
 
 /** Adds a comment to a task */
@@ -171,11 +146,7 @@ export async function createComment(
 
   const author = await db.select().from(users).where(eq(users.id, authorId)).get();
 
-  if (!author) {
-    throw new HttpError(500, 'INTERNAL_ERROR', 'Comment author not found');
-  }
-
-  return toCommentDto(comment, author);
+  return toCommentDto(comment, author!);
 }
 
 /** Deletes a comment (author only) */

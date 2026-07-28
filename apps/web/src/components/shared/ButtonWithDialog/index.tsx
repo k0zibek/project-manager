@@ -7,7 +7,7 @@ import {
 
 interface ButtonWithDialogFormProps {
   dialogTitle: string,
-  handleClick: () => void;
+  handleClick: () => void | Promise<void>;
   buttonText?: string,
   intent?: Intent,
   icon?: IconName,
@@ -27,6 +27,11 @@ export const ButtonWithDialog: FC<ButtonWithDialogFormProps> = ({
   const handleOpen = () => setIsOpenDialog(true);
   const handleClose = () => setIsOpenDialog(false);
 
+  const onConfirm = async () => {
+    await handleClick();
+    handleClose();
+  };
+
   return (
     <>
       <Button
@@ -39,7 +44,7 @@ export const ButtonWithDialog: FC<ButtonWithDialogFormProps> = ({
       <Dialog isCloseButtonShown={false} isOpen={isOpenDialog} onClose={handleClose} title={dialogTitle || buttonText}>
         <DialogBody>
           <Button className="dialog-button" onClick={handleClose} text="Отмена" />
-          <Button className="dialog-button" intent={intent} onClick={handleClick} text={buttonText || 'Сохранить'} />
+          <Button className="dialog-button" intent={intent} onClick={onConfirm} text={buttonText || 'Сохранить'} />
         </DialogBody>
       </Dialog>
     </>

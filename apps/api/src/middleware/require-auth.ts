@@ -10,10 +10,6 @@ import {
   verifyRefreshToken,
 } from '../lib/jwt.js';
 
-export type AuthenticatedRequest = FastifyRequest & {
-  userId: string;
-};
-
 /** Resolves user id from cookies; refreshes access token when expired */
 export async function requireAuth(
   request: FastifyRequest,

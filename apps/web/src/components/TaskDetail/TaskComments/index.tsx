@@ -1,7 +1,6 @@
 // libraries
 import { type FC } from 'react';
 import { type SubmitHandler, useForm } from 'react-hook-form';
-import { useSelector } from 'react-redux';
 import { useParams } from 'react-router-dom';
 import {
   Button, Card, Intent,
@@ -10,10 +9,9 @@ import {
 import { FormInputField } from 'components/shared/FormInputField';
 // constants
 import { type IComment } from 'constants/types';
-// store
-import type { RootState } from 'context/store';
 import { useToasterContext } from 'hooks/ToasterProvider/useToasterProvider';
 // hooks
+import { useMe } from 'features/auth/hooks/useAuth';
 import { useCreateComment, useDeleteComment } from 'features/tasks/hooks/useTasks';
 
 import { format } from 'date-fns';
@@ -32,7 +30,7 @@ interface TaskCommentProps {
 export const TaskComments: FC<TaskCommentProps> = ({ comments, projectId }) => {
   const { toaster } = useToasterContext();
   const { taskId } = useParams();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { data: user } = useMe();
   const {
     control, handleSubmit, reset, formState: { errors },
   } = useForm<CommentFormValues>({ defaultValues: { comment: '' } });
